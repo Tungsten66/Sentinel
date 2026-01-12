@@ -1,0 +1,2188 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## User Activity Audit Workbook\n---\nComprehensive tool for analyzing user activities across **Entra ID**, **Azure Resources**, **Microsoft Graph API**, and **Sign-in Events**. Filter by User Principal Name (UPN) to review authentication, authorization, resource changes, privileged operations, and application activity.\n\n**Features:** Activity timelines • Risk detection • Privileged role tracking • Application consents • Multi-factor authentication analysis • Conditional access enforcement • Geographic tracking • Device analysis"
+      },
+      "name": "text - title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "e8d1e1e8-7f1e-4f1e-8f1e-1e8f1e8f1e8f",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time Range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "version": "KqlParameterItem/1.0",
+            "name": "UserPrincipalName",
+            "label": "User Principal Name (UPN)",
+            "type": 1,
+            "description": "Enter the user's email address (e.g., user@domain.com) to investigate their activity across all sources",
+            "isRequired": true,
+            "value": "",
+            "typeSettings": {
+              "multiLineText": false,
+              "editorType": 0
+            },
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTab",
+            "label": "Selected Tab",
+            "type": 1,
+            "isRequired": false,
+            "value": "Overview",
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "multiLineText": false,
+              "editorType": 0
+            },
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - filters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Navigation"
+      },
+      "name": "text - navigation title"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "4df9243a-749d-4698-98f6-188e0b687e13",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Overview",
+            "subTarget": "Overview",
+            "style": "link"
+          },
+          {
+            "id": "7f3hcd13-8fb8-7g25-c0cg-60254e45dhb0",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔐 Sign-in Activity",
+            "subTarget": "SignIn",
+            "style": "link"
+          },
+          {
+            "id": "4c0faa80-5c85-4d02-989d-37921b12ae87",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "👤 Entra ID Activity",
+            "subTarget": "EntraID",
+            "style": "link"
+          },
+          {
+            "id": "5d1fab91-6d96-5e03-a8ae-48032c23bf98",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☁️ Azure Resources",
+            "subTarget": "Azure",
+            "style": "link"
+          },
+          {
+            "id": "6e2gbc02-7ea7-6f14-b9bf-59143d34cga9",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📡 Graph API",
+            "subTarget": "GraphAPI",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "links - navigation"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+    "items": [
+      {
+        "type": 1,
+        "content": {
+          "json": "---\n## Overview\nActivity summary across Azure, Entra ID, and Microsoft Graph APIs."
+        },
+        "name": "text - overview title"
+      },
+      {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize EntraIDCount = count()\n| extend Source = \"Entra ID\"",
+              "size": 4,
+              "title": "Activity Summary",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Source",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "EntraIDCount",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "33",
+            "name": "query - overview entra"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize AzureCount = count()\n| extend Source = \"Azure Resources\"",
+              "size": 4,
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Source",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "AzureCount",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "33",
+            "name": "query - overview azure"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| summarize GraphCount = count()\n| extend Source = \"Graph API\"",
+              "size": 4,
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Source",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "GraphCount",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "33",
+            "name": "query - overview graph"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by bin(TimeGenerated, 1h)\n| extend Source = \"Entra ID\"\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | summarize Count = count() by bin(TimeGenerated, 1h)\n    | extend Source = \"Azure Resources\"\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | summarize Count = count() by bin(TimeGenerated, 1h)\n    | extend Source = \"Graph API\"\n)\n| render timechart",
+              "size": 0,
+              "title": "Activity Timeline - All Sources",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "name": "query - overview timeline"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend IPAddress = tostring(InitiatedBy.user.ipAddress)\n| where isnotempty(IPAddress)\n| summarize Count = count() by IPAddress, Source = \"Entra ID\"\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | where isnotempty(CallerIpAddress)\n    | summarize Count = count() by IPAddress = CallerIpAddress, Source = \"Azure Resources\"\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | where isnotempty(IPAddress)\n    | summarize Count = count() by IPAddress, Source = \"Graph API\"\n)\n| summarize TotalCount = sum(Count), Sources = make_set(Source) by IPAddress\n| top 10 by TotalCount desc",
+              "size": 0,
+              "title": "Top Source IP Addresses - All Sources",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TotalCount",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview ips"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where Result == \"failure\"\n| summarize Count = count() by Source = \"Entra ID\"\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | where ActivityStatusValue has_any (\"Failure\", \"Failed\")\n    | summarize Count = count() by Source = \"Azure Resources\"\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | where ResponseStatusCode >= 400\n    | summarize Count = count() by Source = \"Graph API\"\n)\n| render piechart",
+              "size": 0,
+              "title": "Failed Activities by Source",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - overview failures"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(IdentityInfo | where TimeGenerated > ago(30d) | where AccountUPN =~ \"{UserPrincipalName}\" | top 1 by TimeGenerated desc | project AccountObjectId);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d\n| summarize Count = count() by Hour, DayOfWeek\n| union (AzureActivity | where TimeGenerated {TimeRange} | where Caller =~ \"{UserPrincipalName}\" | extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d | summarize Count = count() by Hour, DayOfWeek)\n| union (MicrosoftGraphActivityLogs | where TimeGenerated {TimeRange} | where UserId =~ UserObjectId | extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d | summarize Count = count() by Hour, DayOfWeek)\n| summarize TotalCount = sum(Count) by Hour, DayOfWeek\n| extend DayName = case(DayOfWeek == 0, \"Sunday\", DayOfWeek == 1, \"Monday\", DayOfWeek == 2, \"Tuesday\", DayOfWeek == 3, \"Wednesday\", DayOfWeek == 4, \"Thursday\", DayOfWeek == 5, \"Friday\", DayOfWeek == 6, \"Saturday\", \"Unknown\")\n| project Hour, DayOfWeek, DayName, TotalCount\n| order by DayOfWeek asc, Hour asc",
+              "size": 0,
+              "title": "Activity Heatmap - Time of Day & Day of Week",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TotalCount",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "greenRed"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - overview heatmap"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where OperationName has_any (\"Add member to role\", \"Remove member from role\", \"Add eligible member to role\", \"Add active member to role\", \"Activate role\")\n| extend RoleName = tostring(TargetResources[0].displayName)\n| extend TargetUser = tostring(TargetResources[1].userPrincipalName)\n| extend RoleAction = case(\n    OperationName has \"Add\", \"Role Assignment\",\n    OperationName has \"Remove\", \"Role Removal\",\n    OperationName has \"Activate\", \"Role Activation\",\n    \"Other\")\n| project TimeGenerated, OperationName, RoleName, TargetUser, RoleAction, Result\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | where OperationNameValue has \"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS\"\n    | extend RoleAction = case(\n        OperationNameValue has \"WRITE\", \"Role Assignment\",\n        OperationNameValue has \"DELETE\", \"Role Removal\",\n        \"Other\")\n    | project TimeGenerated, OperationName = OperationNameValue, RoleName = Resource, TargetUser = ResourceGroup, RoleAction, Result = ActivityStatusValue\n)\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "Privileged Role Changes (Top 50)",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TimeGenerated",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "RoleAction",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Role Assignment",
+                          "representation": "add",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Role Removal",
+                          "representation": "remove",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Role Activation",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Result",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "failed",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview privileged roles"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where OperationName has_any (\"Consent to application\", \"Add app role assignment\", \"Add delegated permission grant\", \"Add OAuth2PermissionGrant\")\n| extend AppName = tostring(TargetResources[0].displayName)\n| extend AppId = tostring(TargetResources[0].id)\n| extend ConsentType = case(\n    OperationName has \"Consent\", \"User Consent\",\n    OperationName has \"delegated\", \"Delegated Permission\",\n    OperationName has \"app role\", \"App Role Assignment\",\n    \"Other\")\n| extend Permissions = tostring(TargetResources[0].modifiedProperties)\n| project TimeGenerated, AppName, AppId, ConsentType, OperationName, Result, Permissions\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "Application Consents & Permission Grants (Top 50)",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TimeGenerated",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "ConsentType",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "User Consent",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Result",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "failed",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Permissions",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "CellDetails",
+                      "linkLabel": "View Details"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview app consents"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationName has_any (\"Get\", \"List\", \"Read\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | extend ActivityType = case(\n        OperationNameValue has_any (\"GET\", \"LIST\", \"READ\"), \"Read\",\n        \"Change\")\n    | summarize Count = count() by ActivityType\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | extend ActivityType = case(\n        RequestMethod == \"GET\", \"Read\",\n        \"Change\")\n    | summarize Count = count() by ActivityType\n)\n| summarize TotalCount = sum(Count) by ActivityType\n| render piechart",
+              "size": 0,
+              "title": "Read vs Change Activities",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - overview read vs change"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by Operation = OperationName, Source = \"Entra ID\"\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | summarize Count = count() by Operation = OperationNameValue, Source = \"Azure Resources\"\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | extend Operation = strcat(RequestMethod, \" \", RequestUri)\n    | summarize Count = count() by Operation, Source = \"Graph API\"\n)\n| top 15 by Count desc",
+              "size": 0,
+              "title": "Top 15 Operations Across All Sources",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Count",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview top operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where OperationName has_any (\"Add member to role\", \"Add app role assignment\", \"Delete user\", \"Reset password\", \"Update application\", \"Consent to application\", \"Add delegated permission grant\", \"Update policy\")\n| extend Target = tostring(TargetResources[0].displayName)\n| extend RiskLevel = \"High\"\n| project TimeGenerated, Source = \"Entra ID\", Operation = OperationName, Target, Result, RiskLevel\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | where OperationNameValue has_any (\"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE\", \"MICROSOFT.COMPUTE/VIRTUALMACHINES/DELETE\", \"MICROSOFT.STORAGE/STORAGEACCOUNTS/DELETE\", \"MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE\", \"MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/DELETE\")\n    | extend RiskLevel = \"High\"\n    | project TimeGenerated, Source = \"Azure Resources\", Operation = OperationNameValue, Target = Resource, Result = ActivityStatusValue, RiskLevel\n)\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "High-Risk Operations (Top 50)",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TimeGenerated",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "RiskLevel",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "High",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Result",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "Success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "contains",
+                          "thresholdValue": "fail",
+                          "representation": "failed",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - overview high risk"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Operations = count(), ResourceGroups = dcount(ResourceGroup), Resources = dcount(Resource) by SubscriptionId\n| project SubscriptionId, Operations, ResourceGroups, Resources\n| order by Operations desc",
+              "size": 0,
+              "title": "Affected Azure Subscriptions & Resources",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Operations",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  },
+                  {
+                    "columnMatch": "ResourceGroups",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "green"
+                    }
+                  },
+                  {
+                    "columnMatch": "Resources",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview affected resources"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend TargetType = tostring(TargetResources[0].type)\n| extend TargetId = tostring(TargetResources[0].id)\n| where isnotempty(TargetType)\n| summarize Operations = count(), UniqueTargets = dcount(TargetId) by TargetType\n| order by Operations desc\n| take 10",
+              "size": 0,
+              "title": "Affected Entra ID Resource Types",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Operations",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  },
+                  {
+                    "columnMatch": "UniqueTargets",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "purple"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview entra targets"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Overview"
+      },
+      "name": "group - overview section"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Entra ID Activity\nUser actions in Entra ID including directory operations, user/group management, and application activities."
+            },
+            "name": "text - entra id title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## Entra ID Activity\nUser actions in Entra ID including directory operations, user/group management, and application activities."
+            },
+            "name": "text - entra id title"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by OperationName\n| top 10 by Count desc\n| render piechart",
+              "size": 0,
+              "title": "Top 10 Operations by Count",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - top operations"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by Result\n| render piechart",
+        "size": 0,
+        "title": "Activity Results Distribution",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - results distribution"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationName has_any (\"Get\", \"List\", \"Read\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
+        "size": 0,
+        "title": "Read vs Change Activities",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - entra read vs change"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by bin(TimeGenerated, 1h), Result\n| render timechart",
+        "size": 0,
+        "title": "Activity Timeline",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "name": "query - timeline"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend IPAddress = tostring(InitiatedBy.user.ipAddress)\n| summarize Count = count() by IPAddress\n| where isnotempty(IPAddress)\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top Source IP Addresses",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - ip addresses"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend Category = tostring(Category)\n| summarize Count = count() by Category\n| order by Count desc",
+        "size": 0,
+        "title": "Activity Categories",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - categories"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where Result == \"failure\"\n| extend TargetUPN = tostring(TargetResources[0].userPrincipalName)\n| extend IPAddress = tostring(InitiatedBy.user.ipAddress)\n| extend FailureReason = tostring(ResultReason)\n| project TimeGenerated, OperationName, InitiatorUPN, TargetUPN, IPAddress, FailureReason, AdditionalDetails\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Recent Failed Activities (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "25ch"
+              }
+            },
+            {
+              "columnMatch": "OperationName",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "30ch"
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - failed activities"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend InitiatorDisplayName = tostring(InitiatedBy.user.displayName)\n| extend TargetUPN = tostring(TargetResources[0].userPrincipalName)\n| extend TargetDisplayName = tostring(TargetResources[0].displayName)\n| extend TargetType = tostring(TargetResources[0].type)\n| extend IPAddress = tostring(InitiatedBy.user.ipAddress)\n| extend Location = tostring(InitiatedBy.user.location)\n| extend App = tostring(InitiatedBy.app.displayName)\n| project TimeGenerated, OperationName, Category, Result, ResultReason, InitiatorUPN, InitiatorDisplayName, TargetUPN, TargetDisplayName, TargetType, IPAddress, Location, App, CorrelationId, AdditionalDetails\n| order by TimeGenerated desc\n| take 500",
+        "size": 0,
+        "title": "Detailed Audit Log Entries (Top 500)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "Result",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "success",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "failure",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "TimeGenerated",
+              "sortOrder": 2
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "TimeGenerated",
+            "sortOrder": 2
+          }
+        ]
+      },
+      "name": "query - detailed logs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where OperationName has_any (\"Add member\", \"Remove member\", \"Add user\", \"Delete user\", \"Update user\", \"Reset password\", \"Change password\")\n| extend TargetUPN = tostring(TargetResources[0].userPrincipalName)\n| extend TargetDisplayName = tostring(TargetResources[0].displayName)\n| extend ModifiedProperties = tostring(TargetResources[0].modifiedProperties)\n| project TimeGenerated, OperationName, Result, InitiatorUPN, TargetUPN, TargetDisplayName, ModifiedProperties, AdditionalDetails\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "User & Group Membership Changes (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "Result",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "success",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "failure",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - user changes"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| where OperationName has_any (\"Add service principal\", \"Add application\", \"Update application\", \"Add delegated permission grant\", \"Add app role assignment\", \"Consent to application\")\n| extend TargetApp = tostring(TargetResources[0].displayName)\n| extend TargetType = tostring(TargetResources[0].type)\n| project TimeGenerated, OperationName, Result, InitiatorUPN, TargetApp, TargetType, AdditionalDetails\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Application & Service Principal Activities (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "Result",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "success",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "failure",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - app activities"
+    }
+  ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "EntraID"
+      },
+      "name": "group - entra id"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Azure Resource Activity",
+    "items": [
+      {
+        "type": 1,
+        "content": {
+          "json": "Monitor user actions on Azure resources including resource creation, modification, deletion, and configuration changes."
+        },
+        "name": "text - azure description"
+      },
+      {
+        "type": 3,
+        "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by OperationNameValue\n| top 10 by Count desc\n| render piechart",
+        "size": 0,
+        "title": "Top 10 Azure Operations by Count",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - azure top operations"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by ActivityStatusValue\n| render piechart",
+        "size": 0,
+        "title": "Azure Activity Status Distribution",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - azure status distribution"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationNameValue has_any (\"GET\", \"LIST\", \"READ\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
+        "size": 0,
+        "title": "Read vs Change Activities",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - azure read vs change"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| where isnotempty(CallerIpAddress)\n| summarize Count = count() by CallerIpAddress\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top Source IP Addresses",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - azure ip addresses"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by bin(TimeGenerated, 1h), ActivityStatusValue\n| render timechart",
+        "size": 0,
+        "title": "Azure Activity Timeline",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "name": "query - azure timeline"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by ResourceGroup, ResourceProviderValue\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top Resource Groups & Providers",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - azure resource groups"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by CategoryValue\n| order by Count desc",
+        "size": 0,
+        "title": "Azure Activity Categories",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - azure categories"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| where ActivityStatusValue has_any (\"Failure\", \"Failed\")\n| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup, ResourceProviderValue, Resource, CallerIpAddress, ActivitySubstatusValue, Properties\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Failed Azure Operations (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "25ch"
+              }
+            },
+            {
+              "columnMatch": "ActivityStatusValue",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "Fail",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - azure failed operations"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| project TimeGenerated, OperationNameValue, CategoryValue, ActivityStatusValue, ActivitySubstatusValue, Caller, CallerIpAddress, ResourceGroup, ResourceProviderValue, ResourceId, Resource, SubscriptionId, Level, CorrelationId, Properties\n| order by TimeGenerated desc\n| take 500",
+        "size": 0,
+        "title": "Detailed Azure Activity Log Entries (Top 500)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "ActivityStatusValue",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "Success",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "Fail",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "Level",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Error",
+                    "representation": "error",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Warning",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Informational",
+                    "representation": "info",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "TimeGenerated",
+              "sortOrder": 2
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "TimeGenerated",
+            "sortOrder": 2
+          }
+        ]
+      },
+      "name": "query - azure detailed logs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| where OperationNameValue has_any (\"MICROSOFT.COMPUTE/VIRTUALMACHINES/WRITE\", \"MICROSOFT.COMPUTE/VIRTUALMACHINES/DELETE\", \"MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE\", \"MICROSOFT.STORAGE/STORAGEACCOUNTS/DELETE\", \"MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE\", \"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE\")\n| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup, Resource, ResourceId, CallerIpAddress\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Critical Azure Resource Changes (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "ActivityStatusValue",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "Success",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "contains",
+                    "thresholdValue": "Fail",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - azure critical changes"
+    }
+  ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Azure"
+      },
+      "name": "group - azure"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Microsoft Graph API Activity",
+    "items": [
+      {
+        "type": 1,
+        "content": {
+          "json": "Monitor user interactions with Microsoft Graph APIs including application usage, data access patterns, and API consumption."
+        },
+        "name": "text - graph description"
+      },
+      {
+        "type": 3,
+        "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| summarize Count = count() by RequestMethod\n| render piechart",
+        "size": 0,
+        "title": "Graph API Request Methods",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - graph methods"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend StatusCategory = case(\n    ResponseStatusCode >= 200 and ResponseStatusCode < 300, \"Success\",\n    ResponseStatusCode >= 400 and ResponseStatusCode < 500, \"Client Error\",\n    ResponseStatusCode >= 500, \"Server Error\",\n    \"Other\")\n| summarize Count = count() by StatusCategory\n| render piechart",
+        "size": 0,
+        "title": "Graph API Response Status",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - graph status"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend ActivityType = case(\n    RequestMethod == \"GET\", \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
+        "size": 0,
+        "title": "Read vs Change Activities",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "query - graph read vs change"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| where isnotempty(IPAddress)\n| summarize Count = count() by IPAddress\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top Source IP Addresses",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - graph ip addresses"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| summarize Count = count() by bin(TimeGenerated, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Graph API Activity Timeline",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "name": "query - graph timeline"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend ApiPath = extract(@\"^/([^/]+)/([^/?]+)\", 0, RequestUri)\n| summarize Count = count() by ApiPath\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top 10 Graph API Endpoints",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - graph endpoints"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| summarize Count = count() by AppId\n| top 10 by Count desc",
+        "size": 0,
+        "title": "Top Applications Using Graph API",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "query - graph apps"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| where ResponseStatusCode >= 400\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, UserId, AppId, IPAddress, UserAgent\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Failed Graph API Requests (Top 100)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "25ch"
+              }
+            },
+            {
+              "columnMatch": "ResponseStatusCode",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": ">=",
+                    "thresholdValue": "500",
+                    "representation": "error",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "thresholdValue": "400",
+                    "representation": "failed",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "filter": true
+        }
+      },
+      "name": "query - graph failed requests"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, ResponseSizeBytes, DurationMs, UserId, AppId, IPAddress, UserAgent, RequestId\n| order by TimeGenerated desc\n| take 500",
+        "size": 0,
+        "title": "Detailed Graph API Log Entries (Top 500)",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 6
+            },
+            {
+              "columnMatch": "ResponseStatusCode",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": ">=",
+                    "thresholdValue": "500",
+                    "representation": "error",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "thresholdValue": "400",
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": ">=",
+                    "thresholdValue": "200",
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "unknown",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "DurationMs",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "yellowOrangeRed"
+              }
+            }
+          ],
+          "filter": true,
+          "sortBy": [
+            {
+              "itemKey": "TimeGenerated",
+              "sortOrder": 2
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "TimeGenerated",
+            "sortOrder": 2
+          }
+        ]
+      },
+      "name": "query - graph detailed logs"
+    }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "GraphAPI"
+      },
+      "name": "group - graph api section"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔐 Sign-in Activity\\n---\\nAuthentication events, devices, locations, and risk analysis for the selected user."
+            },
+            "name": "text - signin header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| summarize TotalSignIns = count()",
+              "size": 3,
+              "title": "Total Sign-ins",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "card",
+              "textSettings": {
+                "style": "bignumber"
+              }
+            },
+            "customWidth": "33",
+            "name": "query - signin total"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| where ResultType == 0\n| summarize SuccessfulSignIns = count()",
+              "size": 3,
+              "title": "Successful Sign-ins",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "card",
+              "textSettings": {
+                "style": "bignumber"
+              }
+            },
+            "customWidth": "33",
+            "name": "query - signin success"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| where ResultType != 0\n| summarize FailedSignIns = count()",
+              "size": 3,
+              "title": "Failed Sign-ins",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "card",
+              "textSettings": {
+                "style": "bignumber"
+              }
+            },
+            "customWidth": "33",
+            "name": "query - signin failed"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| summarize Count = count() by bin(TimeGenerated, 1h), ResultType = case(ResultType == 0, \"Success\", \"Failure\")\n| render timechart",
+              "size": 0,
+              "title": "Sign-in Timeline",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "name": "query - signin timeline"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| summarize Count = count() by IPAddress\n| top 10 by Count desc",
+              "size": 0,
+              "title": "Top Sign-in IP Addresses",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Count",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - signin ips"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend City = tostring(LocationDetails.city)\n| extend State = tostring(LocationDetails.state)\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| extend Location = strcat(City, \", \", State, \", \", Country)\n| where isnotempty(Country)\n| summarize Count = count() by Country, State, City\n| top 10 by Count desc",
+              "size": 0,
+              "title": "Top Sign-in Locations",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Count",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "greenRed"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - signin locations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend DeviceOS = tostring(DeviceDetail.operatingSystem)\n| extend DeviceBrowser = tostring(DeviceDetail.browser)\n| extend DeviceName = tostring(DeviceDetail.displayName)\n| where isnotempty(DeviceOS)\n| summarize Count = count() by DeviceOS, DeviceBrowser\n| top 10 by Count desc",
+              "size": 0,
+              "title": "Devices & Browsers Used",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Count",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "purple"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - signin devices"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| summarize Count = count() by AppDisplayName\n| top 10 by Count desc",
+              "size": 0,
+              "title": "Applications Accessed",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Count",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - signin apps"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend RiskLevel = case(\n    RiskLevelDuringSignIn == \"high\", \"High Risk\",\n    RiskLevelDuringSignIn == \"medium\", \"Medium Risk\",\n    RiskLevelDuringSignIn == \"low\", \"Low Risk\",\n    \"No Risk\")\n| where RiskLevel != \"No Risk\"\n| project TimeGenerated, IPAddress, RiskLevel, RiskState, RiskEventTypes, AppDisplayName, ResultType, ResultDescription\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "Risky Sign-ins (Top 50)",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TimeGenerated",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "RiskLevel",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "High Risk",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Medium Risk",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "ResultType",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "0",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "failed",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - signin risky"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| where ResultType != 0\n| extend FailureReason = case(\n    ResultType == 50126, \"Invalid username or password\",\n    ResultType == 50053, \"Account locked\",\n    ResultType == 50057, \"User account is disabled\",\n    ResultType == 50055, \"Password expired\",\n    ResultType == 50074, \"Strong authentication required\",\n    ResultType == 50076, \"Strong authentication required (MFA)\",\n    ResultType == 50079, \"User needs to enroll MFA\",\n    ResultType == 50158, \"External security challenge not satisfied\",\n    ResultDescription)\n| project TimeGenerated, IPAddress, AppDisplayName, ResultType, FailureReason\n| order by TimeGenerated desc\n| take 50",
+              "size": 0,
+              "title": "Failed Sign-in Details (Top 50)",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "TimeGenerated",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "FailureReason",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "redBright"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true
+              }
+            },
+            "name": "query - signin failures detailed"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend MFAResult = case(\n    AuthenticationRequirement == \"multiFactorAuthentication\", \"MFA Used\",\n    \"Single Factor\")\n| summarize Count = count() by MFAResult\n| render piechart",
+              "size": 0,
+              "title": "MFA Usage",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - signin mfa"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend ConditionalAccessStatus = case(\n    ConditionalAccessStatus == \"success\", \"Success\",\n    ConditionalAccessStatus == \"failure\", \"Failure\",\n    ConditionalAccessStatus == \"notApplied\", \"Not Applied\",\n    \"Unknown\")\n| summarize Count = count() by ConditionalAccessStatus\n| render piechart",
+              "size": 0,
+              "title": "Conditional Access Status",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - signin ca"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "SignIn"
+      },
+      "name": "group - signin section"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.OperationalInsights/workspaces/<workspace-name>"
+  ],
+  "fromTemplateId": "sentinel-UserAuditWorkbook",
+  "$schema": "https://raw.githubusercontent.com/Microsoft/Application-Insights-Workbooks/master/schema/workbook.json"
+}
