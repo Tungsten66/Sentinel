@@ -14,6 +14,28 @@
         "version": "KqlParameterItem/1.0",
         "parameters": [
           {
+            "id": "c4d5e6f7-a8b9-0c1d-2e3f-456789abcdef",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspace",
+            "label": "Log Analytics Workspace",
+            "type": 5,
+            "description": "Select the Log Analytics workspace containing your data",
+            "isRequired": true,
+            "multiSelect": false,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "resources\r\n| where type =~ 'microsoft.operationalinsights/workspaces'\r\n| project id, name, location, resourceGroup, subscriptionId\r\n| order by name asc",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "value": null
+          },
+          {
             "id": "e8d1e1e8-7f1e-4f1e-8f1e-1e8f1e8f1e8f",
             "version": "KqlParameterItem/1.0",
             "name": "TimeRange",
