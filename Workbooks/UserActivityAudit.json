@@ -120,6 +120,21 @@
             "timeContext": {
               "durationMs": 2592000000
             }
+          },
+          {
+            "id": "d4e5f6a7-b8c9-0d1e-2f3a-567890bcdef1",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowHelp",
+            "label": "Show Help",
+            "type": 2,
+            "description": "Show instructions for creating the AppIdMapping watchlist",
+            "isRequired": false,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\n    { \"value\": \"No\", \"label\": \"No\" },\n    { \"value\": \"Yes\", \"label\": \"Yes\" }\n]",
+            "value": "No"
           }
         ],
         "style": "pills",
@@ -127,6 +142,18 @@
         "resourceType": "microsoft.operationalinsights/workspaces"
       },
       "name": "parameters - filters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## 📋 Watchlist Setup Instructions\n---\nThis workbook uses an **AppIdMapping** watchlist to resolve Application IDs to friendly display names in the Microsoft Graph API Activity section.\n\n### Steps to Create the Watchlist:\n\n1. **Navigate to Microsoft Sentinel** → **Watchlists** → **+ Add new**\n\n2. **Configure the watchlist:**\n   - **Name:** `AppIdMapping`\n   - **Alias:** `AppIdMapping`\n   - **Description:** `Maps Application IDs to display names for Graph API activity tracking`\n   - **SearchKey:** `appId`\n\n3. **Create a CSV file** with the following structure:\n   ```\n   appId,displayName\n   00000003-0000-0000-c000-000000000000,Microsoft Graph\n   00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online\n   00000003-0000-0ff1-ce00-000000000000,Office 365 SharePoint Online\n   ```\n\n4. **Upload the CSV** and complete the watchlist creation.\n\n5. **Populate with your applications:**\n   - Run this query to find App IDs in your environment:\n   ```kql\n   SigninLogs\n   | where TimeGenerated > ago(90d)\n   | where isnotempty(AppId) and isnotempty(AppDisplayName)\n   | summarize by AppId, AppDisplayName\n   | order by AppDisplayName asc\n   ```\n   - Export results and upload to the watchlist.\n\n> **Note:** If the watchlist doesn't exist, the workbook will fall back to displaying the raw App ID or attempt to resolve names from SigninLogs."
+      },
+      "conditionalVisibility": {
+        "parameterName": "ShowHelp",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
+      "name": "text - help watchlist"
     },
     {
       "type": 1,
@@ -375,38 +402,7 @@
             "customWidth": "50",
             "name": "query - overview failures"
           },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let UserObjectId = toscalar(IdentityInfo | where TimeGenerated > ago(30d) | where AccountUPN =~ \"{UserPrincipalName}\" | top 1 by TimeGenerated desc | project AccountObjectId);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d\n| summarize Count = count() by Hour, DayOfWeek\n| union (AzureActivity | where TimeGenerated {TimeRange} | where Caller =~ \"{UserPrincipalName}\" | extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d | summarize Count = count() by Hour, DayOfWeek)\n| union (MicrosoftGraphActivityLogs | where TimeGenerated {TimeRange} | where UserId =~ UserObjectId | extend Hour = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated) / 1d | summarize Count = count() by Hour, DayOfWeek)\n| summarize TotalCount = sum(Count) by Hour, DayOfWeek\n| extend DayName = case(DayOfWeek == 0, \"Sunday\", DayOfWeek == 1, \"Monday\", DayOfWeek == 2, \"Tuesday\", DayOfWeek == 3, \"Wednesday\", DayOfWeek == 4, \"Thursday\", DayOfWeek == 5, \"Friday\", DayOfWeek == 6, \"Saturday\", \"Unknown\")\n| project Hour, DayOfWeek, DayName, TotalCount\n| order by DayOfWeek asc, Hour asc",
-              "size": 0,
-              "title": "Activity Heatmap - Time of Day & Day of Week",
-              "timeContext": {
-                "durationMs": 2592000000
-              },
-              "timeContextFromParameter": "TimeRange",
-              "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "TotalCount",
-                    "formatter": 8,
-                    "formatOptions": {
-                      "palette": "greenRed"
-                    }
-                  }
-                ],
-                "filter": true
-              }
-            },
-            "name": "query - overview heatmap"
-          },
+
           {
             "type": 3,
             "content": {
@@ -577,60 +573,8 @@
             "customWidth": "50",
             "name": "query - overview app consents"
           },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationName has_any (\"Get\", \"List\", \"Read\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | extend ActivityType = case(\n        OperationNameValue has_any (\"GET\", \"LIST\", \"READ\"), \"Read\",\n        \"Change\")\n    | summarize Count = count() by ActivityType\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | extend ActivityType = case(\n        RequestMethod == \"GET\", \"Read\",\n        \"Change\")\n    | summarize Count = count() by ActivityType\n)\n| summarize TotalCount = sum(Count) by ActivityType\n| render piechart",
-              "size": 0,
-              "title": "Read vs Change Activities",
-              "timeContext": {
-                "durationMs": 2592000000
-              },
-              "timeContextFromParameter": "TimeRange",
-              "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "piechart"
-            },
-            "customWidth": "50",
-            "name": "query - overview read vs change"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nAuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| summarize Count = count() by Operation = OperationName, Source = \"Entra ID\"\n| union (\n    AzureActivity\n    | where TimeGenerated {TimeRange}\n    | where Caller =~ \"{UserPrincipalName}\"\n    | summarize Count = count() by Operation = OperationNameValue, Source = \"Azure Resources\"\n)\n| union (\n    MicrosoftGraphActivityLogs\n    | where TimeGenerated {TimeRange}\n    | where UserId =~ UserObjectId\n    | extend Operation = strcat(RequestMethod, \" \", RequestUri)\n    | summarize Count = count() by Operation, Source = \"Graph API\"\n)\n| top 15 by Count desc",
-              "size": 0,
-              "title": "Top 15 Operations Across All Sources",
-              "timeContext": {
-                "durationMs": 2592000000
-              },
-              "timeContextFromParameter": "TimeRange",
-              "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Count",
-                    "formatter": 8,
-                    "formatOptions": {
-                      "palette": "blue"
-                    }
-                  }
-                ],
-                "filter": true
-              }
-            },
-            "customWidth": "50",
-            "name": "query - overview top operations"
-          },
+
+
           {
             "type": 3,
             "content": {
@@ -819,13 +763,6 @@
           {
             "type": 1,
             "content": {
-              "json": "## Entra ID Activity\nUser actions in Entra ID including directory operations, user/group management, and application activities."
-            },
-            "name": "text - entra id title"
-          },
-          {
-            "type": 1,
-            "content": {
               "json": "---\n## Entra ID Activity\nUser actions in Entra ID including directory operations, user/group management, and application activities."
             },
             "name": "text - entra id title"
@@ -872,27 +809,7 @@
       "customWidth": "50",
       "name": "query - results distribution"
     },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationName has_any (\"Get\", \"List\", \"Read\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
-        "size": 0,
-        "title": "Read vs Change Activities",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "piechart"
-      },
-      "customWidth": "50",
-      "name": "query - entra read vs change"
-    },
+
     {
       "type": 3,
       "content": {
@@ -913,70 +830,8 @@
       },
       "name": "query - timeline"
     },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend IPAddress = tostring(InitiatedBy.user.ipAddress)\n| summarize Count = count() by IPAddress\n| where isnotempty(IPAddress)\n| top 10 by Count desc",
-        "size": 0,
-        "title": "Top Source IP Addresses",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Count",
-              "formatter": 8,
-              "formatOptions": {
-                "palette": "blue"
-              }
-            }
-          ]
-        }
-      },
-      "customWidth": "50",
-      "name": "query - ip addresses"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| extend InitiatorUPN = tostring(InitiatedBy.user.userPrincipalName)\n| where InitiatorUPN =~ \"{UserPrincipalName}\"\n| extend Category = tostring(Category)\n| summarize Count = count() by Category\n| order by Count desc",
-        "size": 0,
-        "title": "Activity Categories",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Count",
-              "formatter": 8,
-              "formatOptions": {
-                "palette": "greenRed"
-              }
-            }
-          ]
-        }
-      },
-      "customWidth": "50",
-      "name": "query - categories"
-    },
+
+
     {
       "type": 3,
       "content": {
@@ -1261,59 +1116,8 @@
       "customWidth": "50",
       "name": "query - azure status distribution"
     },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| extend ActivityType = case(\n    OperationNameValue has_any (\"GET\", \"LIST\", \"READ\"), \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
-        "size": 0,
-        "title": "Read vs Change Activities",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "piechart"
-      },
-      "customWidth": "50",
-      "name": "query - azure read vs change"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| where isnotempty(CallerIpAddress)\n| summarize Count = count() by CallerIpAddress\n| top 10 by Count desc",
-        "size": 0,
-        "title": "Top Source IP Addresses",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Count",
-              "formatter": 8,
-              "formatOptions": {
-                "palette": "blue"
-              }
-            }
-          ]
-        }
-      },
-      "customWidth": "50",
-      "name": "query - azure ip addresses"
-    },
+
+
     {
       "type": 3,
       "content": {
@@ -1366,38 +1170,7 @@
       "customWidth": "50",
       "name": "query - azure resource groups"
     },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where Caller =~ \"{UserPrincipalName}\"\n| summarize Count = count() by CategoryValue\n| order by Count desc",
-        "size": 0,
-        "title": "Azure Activity Categories",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Count",
-              "formatter": 8,
-              "formatOptions": {
-                "palette": "greenRed"
-              }
-            }
-          ]
-        }
-      },
-      "customWidth": "50",
-      "name": "query - azure categories"
-    },
+
     {
       "type": 3,
       "content": {
@@ -1673,59 +1446,8 @@
       "customWidth": "50",
       "name": "query - graph status"
     },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend ActivityType = case(\n    RequestMethod == \"GET\", \"Read\",\n    \"Change\")\n| summarize Count = count() by ActivityType\n| render piechart",
-        "size": 0,
-        "title": "Read vs Change Activities",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "piechart"
-      },
-      "customWidth": "50",
-      "name": "query - graph read vs change"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| where isnotempty(IPAddress)\n| summarize Count = count() by IPAddress\n| top 10 by Count desc",
-        "size": 0,
-        "title": "Top Source IP Addresses",
-        "timeContext": {
-          "durationMs": 2592000000
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "table",
-        "gridSettings": {
-          "formatters": [
-            {
-              "columnMatch": "Count",
-              "formatter": 8,
-              "formatOptions": {
-                "palette": "blue"
-              }
-            }
-          ]
-        }
-      },
-      "customWidth": "50",
-      "name": "query - graph ip addresses"
-    },
+
+
     {
       "type": 3,
       "content": {
@@ -1782,7 +1504,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| summarize Count = count() by AppId\n| top 10 by Count desc",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nlet WatchlistAppNames = _GetWatchlist('AppIdMapping') | project AppId = tostring(appId), AppName = tostring(displayName);\nlet EntraAppNames = SigninLogs\n    | where TimeGenerated > ago(90d)\n    | where isnotempty(AppId) and isnotempty(AppDisplayName)\n    | extend AppId = tostring(AppId)\n    | summarize AppName = take_any(AppDisplayName) by AppId;\nlet AllAppNames = union isfuzzy=true WatchlistAppNames, EntraAppNames | summarize AppName = take_any(AppName) by AppId;\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend AppId = tostring(AppId)\n| summarize Count = count() by AppId\n| lookup kind=leftouter AllAppNames on AppId\n| extend AppName = coalesce(AppName, \"Unknown\")\n| project AppId, AppName, Count\n| top 10 by Count desc",
         "size": 0,
         "title": "Top Applications Using Graph API",
         "timeContext": {
@@ -1814,7 +1536,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| where ResponseStatusCode >= 400\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, UserId, AppId, IPAddress, UserAgent\n| order by TimeGenerated desc\n| take 100",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nlet WatchlistAppNames = _GetWatchlist('AppIdMapping') | project AppId = tostring(appId), AppName = tostring(displayName);\nlet EntraAppNames = SigninLogs\n    | where TimeGenerated > ago(90d)\n    | where isnotempty(AppId) and isnotempty(AppDisplayName)\n    | extend AppId = tostring(AppId)\n    | summarize AppName = take_any(AppDisplayName) by AppId;\nlet AllAppNames = union isfuzzy=true WatchlistAppNames, EntraAppNames | summarize AppName = take_any(AppName) by AppId;\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| where ResponseStatusCode >= 400\n| extend AppId = tostring(AppId)\n| lookup kind=leftouter AllAppNames on AppId\n| extend AppName = coalesce(AppName, AppId)\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, AppName, IPAddress, UserAgent\n| order by TimeGenerated desc\n| take 100",
         "size": 0,
         "title": "Failed Graph API Requests (Top 100)",
         "timeContext": {
@@ -1873,7 +1595,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, ResponseSizeBytes, DurationMs, UserId, AppId, IPAddress, UserAgent, RequestId\n| order by TimeGenerated desc\n| take 500",
+        "query": "let UserObjectId = toscalar(\n    IdentityInfo\n    | where TimeGenerated > ago(30d)\n    | where AccountUPN =~ \"{UserPrincipalName}\"\n    | top 1 by TimeGenerated desc\n    | project AccountObjectId\n);\nlet WatchlistAppNames = _GetWatchlist('AppIdMapping') | project AppId = tostring(appId), AppName = tostring(displayName);\nlet EntraAppNames = SigninLogs\n    | where TimeGenerated > ago(90d)\n    | where isnotempty(AppId) and isnotempty(AppDisplayName)\n    | extend AppId = tostring(AppId)\n    | summarize AppName = take_any(AppDisplayName) by AppId;\nlet AllAppNames = union isfuzzy=true WatchlistAppNames, EntraAppNames | summarize AppName = take_any(AppName) by AppId;\nMicrosoftGraphActivityLogs\n| where TimeGenerated {TimeRange}\n| where UserId =~ UserObjectId\n| extend AppId = tostring(AppId)\n| lookup kind=leftouter AllAppNames on AppId\n| extend AppName = coalesce(AppName, AppId)\n| project TimeGenerated, RequestMethod, RequestUri, ResponseStatusCode, ResponseSizeBytes, DurationMs, AppName, IPAddress, UserAgent, RequestId\n| order by TimeGenerated desc\n| take 500",
         "size": 0,
         "title": "Detailed Graph API Log Entries (Top 500)",
         "timeContext": {
@@ -2314,48 +2036,6 @@
               }
             },
             "name": "query - signin failures detailed"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend MFAResult = case(\n    AuthenticationRequirement == \"multiFactorAuthentication\", \"MFA Used\",\n    \"Single Factor\")\n| summarize Count = count() by MFAResult\n| render piechart",
-              "size": 0,
-              "title": "MFA Usage",
-              "timeContext": {
-                "durationMs": 2592000000
-              },
-              "timeContextFromParameter": "TimeRange",
-              "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "piechart"
-            },
-            "customWidth": "50",
-            "name": "query - signin mfa"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\n| extend ConditionalAccessStatus = case(\n    ConditionalAccessStatus == \"success\", \"Success\",\n    ConditionalAccessStatus == \"failure\", \"Failure\",\n    ConditionalAccessStatus == \"notApplied\", \"Not Applied\",\n    \"Unknown\")\n| summarize Count = count() by ConditionalAccessStatus\n| render piechart",
-              "size": 0,
-              "title": "Conditional Access Status",
-              "timeContext": {
-                "durationMs": 2592000000
-              },
-              "timeContextFromParameter": "TimeRange",
-              "queryType": 0,
-              "crossComponentResources": [
-                "{Workspace}"
-              ],
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "visualization": "piechart"
-            },
-            "customWidth": "50",
-            "name": "query - signin ca"
           }
         ]
       },
