@@ -122,7 +122,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "PaloAlto_Syslog()\r\n| where isnotempty(SourceAddress)\r\n| summarize Count = count() by SourceAddress\r\n| top 200 by Count desc\r\n| project Value = SourceAddress, Label = strcat(SourceAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false\r\n",
+            "query": "Syslog\r\n| where Facility == \"user\"\r\n| where SyslogMessage startswith \"1,20\"\r\n| where SyslogMessage has_any (\",TRAFFIC,\", \",THREAT,\", \",SYSTEM,\", \",CONFIG,\")\r\n| extend p = split(SyslogMessage, \",\")\r\n| extend SourceAddress = tostring(p[7])\r\n| where isnotempty(SourceAddress)\r\n| summarize Count = count() by SourceAddress\r\n| top 200 by Count desc\r\n| project Value = SourceAddress, Label = strcat(SourceAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false\r\n",
             "value": [
               "value::all"
             ],
@@ -149,7 +149,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "PaloAlto_Syslog()\r\n| where isnotempty(DestinationAddress)\r\n| summarize Count = count() by DestinationAddress\r\n| top 200 by Count desc\r\n| project Value = DestinationAddress, Label = strcat(DestinationAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false",
+            "query": "Syslog\r\n| where Facility == \"user\"\r\n| where SyslogMessage startswith \"1,20\"\r\n| where SyslogMessage has_any (\",TRAFFIC,\", \",THREAT,\", \",SYSTEM,\", \",CONFIG,\")\r\n| extend p = split(SyslogMessage, \",\")\r\n| extend DestinationAddress = tostring(p[8])\r\n| where isnotempty(DestinationAddress)\r\n| summarize Count = count() by DestinationAddress\r\n| top 200 by Count desc\r\n| project Value = DestinationAddress, Label = strcat(DestinationAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false",
             "value": [
               "value::all"
             ],
@@ -190,7 +190,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "PaloAlto_Syslog()\r\n| extend EventClass = coalesce(Subtype, ThreatContentType)\r\n| where isnotempty(EventClass)\r\n| summarize Count = count() by EventClass\r\n| top 200 by Count desc\r\n| project Value = EventClass, Label = EventClass, Selected = false",
+            "query": "Syslog\r\n| where Facility == \"user\"\r\n| where SyslogMessage startswith \"1,20\"\r\n| where SyslogMessage has_any (\",TRAFFIC,\", \",THREAT,\", \",SYSTEM,\", \",CONFIG,\")\r\n| extend p = split(SyslogMessage, \",\")\r\n| extend EventClass = tostring(p[4])\r\n| where isnotempty(EventClass)\r\n| summarize Count = count() by EventClass\r\n| top 200 by Count desc\r\n| project Value = EventClass, Label = EventClass, Selected = false",
             "value": [
               "value::all"
             ],
