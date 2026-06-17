@@ -1,0 +1,1546 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "<div style=\"font-size: 200%;\">Palo Alto Networks overview</div><div style=\"font-size: 90%; color: #605e5c; margin-top: 4px;\">Workbook Version: v2.9 | Last Updated: 2026-06-17</div>"
+      },
+      "name": "text - 0"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "e1a2b3c4-d5e6-7890-abcd-ef1234567890",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowHelp",
+            "label": "Show Help",
+            "type": 2,
+            "isRequired": true,
+            "jsonData": "[{\"value\": \"Yes\", \"label\": \"Yes\"}, {\"value\": \"No\", \"label\": \"No\"}]",
+            "value": "No",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - showhelp"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## ℹ️ Parser Function Requirement\r\n\r\n**Workbook Version:** v2.9  \r\n**Workbook Last Updated:** 2026-06-17  \r\n**Parser Version:** v2.15  \r\n**Parser Last Updated:** 2026-06-17\r\n\r\n### Change Log\r\n- v2.9 | 2026-06-17 | Optimized timechart queries by replacing raw TimeGenerated grouping with TimeRange-aligned bin_at() aggregation to reduce render cost.\r\n- v2.8 | 2026-06-17 | Reduced workbook load-time cost by simplifying parameter and summary tile queries (removed join+make-series startup patterns).\r\n- v2.7 | 2026-06-17 | Added low-cost type token prefilter before regex extraction to reduce base scan CPU.\r\n- v2.6 | 2026-06-17 | Removed explicit function time parameters/filter so workbook and Logs use the selected UI TimeRange.\r\n- v2.4 | 2026-06-17 | Reworked parser internals from nested callables to tabular let sections to resolve callable-expression errors in Sentinel Logs.\r\n- v2.3 | 2026-06-17 | Fixed callable-union invocation by explicitly invoking all parser sub-functions.\r\n- v2.2 | 2026-06-17 | Added TimeRange-parameterized parser calls in workbook queries; parser now uses early time pruning and no materialize/global sort.\r\n- v2.1 | 2026-06-12 | Initial customer workbook/parser baseline for PAN-OS 11.x/12.x fields.\r\n\r\nThis workbook requires the **`PaloAlto_Syslog`** workspace function to be deployed in your Microsoft Sentinel workspace before any data will appear.\r\n\r\n---\r\n\r\n### Deploying the Parser Function\r\n\r\n1. Open **Microsoft Sentinel** → **Logs**\r\n2. Paste the function body from `PaloAlto_Syslog.function.kql` into Function Body\r\n3. Click **Save as function**\r\n4. Set the **Function name** to exactly: `PaloAlto_Syslog`\r\n5. (Optional) Set a description, then click **Save**\r\n\r\n---\r\n\r\n### What the Parser Does\r\n\r\nThe `PaloAlto_Syslog` function reads from Sentinel `Syslog` (facility: **user**) and parses active PAN-OS log types in this deployment (TRAFFIC, THREAT, SYSTEM, CONFIG) into a structured schema.\r\n\r\n### Prerequisites\r\n\r\n- PAN-OS syslog forwarding configured to send to the Log Analytics workspace (facility: **user**)\r\n- Syslog messages must use PAN-OS RFC 5424 style records (starting with `1,20`)\r\n- The `PaloAlto_Syslog` function must be saved as a **workspace function** in Sentinel Logs"
+      },
+      "conditionalVisibility": {
+        "parameterName": "ShowHelp",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
+      "name": "text - help"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "query": "",
+        "crossComponentResources": [],
+        "parameters": [
+          {
+            "id": "a5c18655-3e2d-4d12-8ba4-82e57b296581",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2419200000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "32f5a8aa-9c54-4fd1-a2b9-8461b2c57f55",
+            "version": "KqlParameterItem/1.0",
+            "name": "Source_IP",
+            "label": "Source IP",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "PaloAlto_Syslog()\r\n| where isnotempty(SourceAddress)\r\n| summarize Count = count() by SourceAddress\r\n| top 200 by Count desc\r\n| project Value = SourceAddress, Label = strcat(SourceAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false\r\n",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "All"
+            },
+            "timeContext": {
+              "durationMs": 1800000
+            },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          {
+            "id": "b937ca33-bc62-4183-bc0f-9ad8306dc36a",
+            "version": "KqlParameterItem/1.0",
+            "name": "Destination_IP",
+            "label": "Destination IP",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "PaloAlto_Syslog()\r\n| where isnotempty(DestinationAddress)\r\n| summarize Count = count() by DestinationAddress\r\n| top 200 by Count desc\r\n| project Value = DestinationAddress, Label = strcat(DestinationAddress, \" - \", round(Count/1000.0, 2), \"k\"), Selected = false",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "limitSelectTo": 10,
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "All"
+            },
+            "timeContext": {
+              "durationMs": 0
+            },
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 5"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "query": "",
+        "crossComponentResources": [],
+        "parameters": [
+          {
+            "id": "7f28bae3-a11f-408a-832f-77a0f3e633d7",
+            "version": "KqlParameterItem/1.0",
+            "name": "EventClass",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "PaloAlto_Syslog()\r\n| extend EventClass = coalesce(Subtype, ThreatContentType)\r\n| where isnotempty(EventClass)\r\n| summarize Count = count() by EventClass\r\n| top 200 by Count desc\r\n| project Value = EventClass, Label = EventClass, Selected = false",
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "selectAllValue": "All"
+            },
+            "timeContext": {
+              "durationMs": 0
+            },
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 35"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP})\r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where \"{EventClass:label}\" == \"All\" or coalesce(Subtype, ThreatContentType) in ({EventClass});\r\ndata\r\n| summarize Count = count() by Type\r\n| extend Activitys = Type, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend Type = 'All', Activitys = '*', Trend = dynamic([]))\r\n| order by Count desc\r\n| take 10",
+        "size": 4,
+        "exportFieldName": "Type",
+        "exportParameterName": "activities",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Activities, by volume",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Activity",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Count",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blueDark",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "lightBlue",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Activitys",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey1",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        },
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Activity",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "name": "all activities"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP})\r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where \"{EventClass:label}\" == \"All\" or coalesce(Subtype, ThreatContentType) in ({EventClass})\r\n| where '{activities}' == \"All\" or Type == '{activities}'\r\n| summarize LogVolume=count() by coalesce(Subtype, ThreatContentType), bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})",
+        "size": 0,
+        "aggregation": 3,
+        "exportToExcelOptions": "visible",
+        "title": "Event trend, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart",
+        "tileSettings": {
+          "showBorder": false,
+          "titleContent": {
+            "columnMatch": "EventClass",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "LogVolume",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Event trend by time"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//trend by sevearity\r\nPaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where \"{EventClass:label}\" == \"All\" or coalesce(Subtype, ThreatContentType) in ({EventClass})\r\n| where '{activities}' == \"All\" or Type == '{activities}'\r\n| summarize count() by bin_at(TimeGenerated, {TimeRange:grain},{TimeRange:start}), SeverityLevel\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Events severity, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart",
+        "tileSettings": {
+          "showBorder": false,
+          "titleContent": {
+            "columnMatch": "SeverityLevel",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "count_",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        },
+        "graphSettings": {
+          "type": 0,
+          "topContent": {
+            "columnMatch": "SeverityLevel",
+            "formatter": 1
+          },
+          "centerContent": {
+            "columnMatch": "count_",
+            "formatter": 1,
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Events severity over time"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\r\n### Traffic events summary"
+      },
+      "name": "text - 11"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ \"TRAFFIC\"\r\n| extend EventClass = coalesce(Subtype, ThreatContentType);\r\ndata\r\n| summarize Count = count() by EventClass\r\n| extend DeviceEventClassIDs = EventClass, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend EventClass = 'All', DeviceEventClassIDs = '*', Trend = dynamic([]))\r\n| order by Count desc\r\n| take 10",
+        "size": 4,
+        "exportFieldName": "EventClass",
+        "exportParameterName": "EventClass",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Device events Id summary - click to filter the graph below",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "EventClass",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "style": "decimal",
+                "maximumFractionDigits": 2,
+                "maximumSignificantDigits": 3
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "customWidth": "50",
+      "name": "Traffic event summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ \"TRAFFIC\";\r\ndata\r\n| summarize Count = count() by Action\r\n| extend Actions = Action, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend Action = 'All', Actions = '*', Trend = dynamic([]))\r\n| order by Count desc\r\n| take 10",
+        "size": 4,
+        "exportFieldName": "Action",
+        "exportParameterName": "DeviceAction",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Device action summary - click to filter the graph below",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Action",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Count",
+              "formatter": 3,
+              "formatOptions": {
+                "palette": "blueDark",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "blueDark",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey1",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Actions",
+              "formatter": 5,
+              "formatOptions": {
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        },
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Action",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "customWidth": "33",
+      "name": "Traffic activity summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC'\r\n| where '{EventClass}' == \"All\" or coalesce(Subtype, ThreatContentType)=='{EventClass}'\r\n| summarize EventCount= count() by Action, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Device action, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart"
+      },
+      "customWidth": "50",
+      "name": "Traffic activity by time"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where '{DeviceAction}' == \"All\" or Action=='{DeviceAction}'\r\n| where Type =~ \"TRAFFIC\"\r\n| summarize EventCount= count() by coalesce(Subtype, ThreatContentType), bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Device events Id, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart"
+      },
+      "customWidth": "50",
+      "name": "Traffic class ID by time"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC' \r\n| where Subtype =~ 'end' \r\n| extend Reason = SessionEndReason\r\n| summarize ReasonCount= count() by Reason, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Reasons for session ending, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "customWidth": "50",
+      "name": "Reasons for session ending"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "// Data sent outbound vs inbound\r\nPaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC'\r\n| extend Direction=iff(SourceZone=~'Trust','Outbound' ,'Inbound' )\r\n| summarize DataSentOutBoundMB=sumif(BytesSent, Direction=~'Outbound')/1048576, DataRecievedInboundMB=sumif(BytesReceived, Direction=~'Inbound')/1048576 by bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Sent and received data, by volume",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "customWidth": "50",
+      "name": "Sent and received data by volume"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\r\n## Web filter"
+      },
+      "name": "text - 12"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action contains 'block'\r\n| summarize ProtocolCount=count()  by Application\r\n| top 5 by ProtocolCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 blocked URLs, by application protocol",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Application",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ProtocolCount",
+              "formatter": 4,
+              "formatOptions": {
+                "min": 0,
+                "palette": "purple",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 blocked URLs by application protocol"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action in ('block-url', 'block-continue')\r\n| summarize CategoryCount=count() by Category\r\n| project-rename CategoryName= Category\r\n| top 5 by CategoryCount\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 URL blocked, by category",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "CategoryName",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "CategoryCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "op 5 URL blocked by category"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action in ('block-url', 'block-continue')\r\n| summarize URLCount=count() by URLFilename\r\n| top 5 by URLCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 blocked URLs",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "25",
+      "name": "Top 5 blocked URLs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| summarize ProtocolCount=count() by Application\r\n| top 5 by ProtocolCount desc",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 URLs, by application protocols",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Application",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ProtocolCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 URLs by application protocols"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action in ('alert', 'continue')\r\n| summarize URLCount=count() by URLFilename\r\n| top 5 by URLCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 allowed URLs",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "URLFilename",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "URLCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 allowed URLs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| summarize ActionCount=count() by Action\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "URL threat event summary",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Action",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ActionCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "URL threat event summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action contains 'block'\r\n| extend PAReferer = Referer\r\n| where PAReferer !=''\r\n| summarize RefererCount= count() by PAReferer\r\n| top 5 by RefererCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 referrers for blocked URLs",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "customWidth": "25",
+      "name": "Top 5 referrers for blocked URLs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action in ('alert', 'continue')\r\n| summarize CategoryCount=count() by Category\r\n| project-rename CategoryName= Category\r\n| top 5 by CategoryCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 allowed URLs, by category",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "CategoryName",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "CategoryCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 allowed URLs, by category"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| where Action !contains 'block'\r\n| summarize ProtocolCount=count()  by Application\r\n| top 5 by ProtocolCount desc",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 allowed URLs, by application protocol",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Application",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ProtocolCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Top 5 allowed URLs by application protocol"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'url'\r\n| summarize ActionCount=count() by Action, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Web filter ativity, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Action",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ActionCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Web filter ativity by time"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where ThreatContentType =~ 'url'\r\n| where Action in ('alert', 'continue')\r\n| summarize IPCount=count() by SourceAddress\r\n| top 5 by IPCount  desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 allowed web traffic source IP addresses",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "SourceIP",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "IPCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Top 5 allowed web traffic source IP addresses"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\r\n## Wildfire"
+      },
+      "name": "text - 24"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'wildfire'\r\n| summarize ActionCount=count() by Action, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Wildfire events, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "customWidth": "50",
+      "name": "Wildfire events, by time"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'wildfire'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP});\r\ndata\r\n| summarize Count = count() by Action\r\n| extend Actions = Action, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend Action = 'All', Actions = '*', Trend = dynamic([]))\r\n| project Action, Count, Trend\r\n| order by Count desc\r\n| take 10",
+        "size": 4,
+        "exportFieldName": "Action",
+        "exportParameterName": "DeviceAction",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 Wildfire activities",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Action",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Count",
+              "formatter": 3,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "grayBlue",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Actions",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey1",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            }
+          ],
+          "sortBy": [
+            {
+              "itemKey": "Action",
+              "sortOrder": 1
+            }
+          ],
+          "labelSettings": []
+        },
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Action",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 Wildfire activities"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'wildfire'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP});\r\ndata\r\n| summarize Count = count() by Category\r\n| extend Categorys = Category, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend Category = 'All', Categorys = '*', Trend = dynamic([]))\r\n| project Category, Count, Trend\r\n| order by Count desc\r\n| take 10",
+        "size": 4,
+        "exportFieldName": "Category",
+        "exportParameterName": "DeviceString",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 Wildfire verdicts",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Action",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Count",
+              "formatter": 3,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Trend",
+              "formatter": 9,
+              "formatOptions": {
+                "palette": "grayBlue",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "Actions",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "TimeGenerated",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "jkey1",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            }
+          ],
+          "sortBy": [
+            {
+              "itemKey": "Action",
+              "sortOrder": 1
+            }
+          ],
+          "labelSettings": []
+        },
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Category",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "customWidth": "25",
+      "name": "Top 5 Wildfire verdicts"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'wildfire'\r\n| where '{DeviceAction}' == \"All\" or Action=='{DeviceAction}'\r\n| where '{DeviceString}' == \"All\" or Category=='{DeviceString}'\r\n| project TimeGenerated, GeneratedTime, SeverityLevel, Action, ['URL Category'] = Category, DestinationPort, DestinationAddress, ThreatID, SourcePort, SourceAddress, DestinationUser, URLFilename",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Wildfire events",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "filter": true,
+          "labelSettings": []
+        }
+      },
+      "name": "Wildfire events"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\r\n## General statistics"
+      },
+      "name": "text - 30"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where ThreatContentType =~ 'file'\r\n| where Action contains 'deny'\r\n| summarize ProtocolCount=count()  by Application\r\n| top 5 by ProtocolCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 denied files, by application protocol",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Application",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ProtocolCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Top 5 denied files by application protocol"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where ThreatContentType =~ 'file'\r\n| where Action !contains 'deny'\r\n| summarize ProtocolCount=count()  by Application\r\n| top 5 by ProtocolCount desc\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Top 5 allowed files, by application protocol",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Application",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "ProtocolCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Top 5 allowed files by application protocol"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "//Palo Alto File Category By Action Summary\r\nPaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where ThreatContentType =~ 'file' \r\n| extend PACategory = Category\r\n| summarize CategoryCount=count() by PACategory\r\n| sort by CategoryCount",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Summary of Palo Alto file categories, by activity",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "PACategory",
+              "formatter": 0,
+              "formatOptions": {
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "CategoryCount",
+              "formatter": 4,
+              "formatOptions": {
+                "palette": "coldHot",
+                "showIcon": true
+              },
+              "numberFormat": {
+                "unit": 17,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            }
+          ],
+          "labelSettings": []
+        }
+      },
+      "customWidth": "33",
+      "name": "Summary of Palo Alto file categories by activity"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'file'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP});\r\ndata\r\n| summarize Count = count() by Action\r\n| extend Actions = Action, Trend = dynamic([])\r\n| union (data\r\n| summarize Count = count()\r\n| extend Action = 'All', Actions = '*', Trend = dynamic([]))\r\n| project Action, Count, Trend\r\n| order by Count desc\r\n| take 10\r\n",
+        "size": 4,
+        "exportFieldName": "Action",
+        "exportParameterName": "SelectedDA",
+        "exportDefaultValue": "All",
+        "exportToExcelOptions": "visible",
+        "title": "Summary of file type activities",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Action",
+            "formatter": 1,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto",
+              "showIcon": true
+            },
+            "numberFormat": {
+              "unit": 17,
+              "options": {
+                "maximumSignificantDigits": 3,
+                "maximumFractionDigits": 2
+              }
+            }
+          },
+          "secondaryContent": {
+            "columnMatch": "Trend",
+            "formatter": 9,
+            "formatOptions": {
+              "showIcon": true
+            }
+          },
+          "showBorder": false
+        }
+      },
+      "customWidth": "25",
+      "name": "Summary of file type activities"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "PaloAlto_Syslog()\r\n| where Type =~ 'THREAT'\r\n| where ThreatContentType =~ 'file'\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where '{SelectedDA}' == \"All\" or Action == '{SelectedDA}'\r\n| summarize ActionCount=count() by Action, bin(TimeGenerated, {TimeRange:grain})\r\n",
+        "size": 0,
+        "exportToExcelOptions": "visible",
+        "title": "Compare allowed and denied files, by time",
+        "timeContext": {
+          "durationMs": 0
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "timechart"
+      },
+      "name": "Compare allowed and denied files by time"
+    }
+  ],
+  "styleSettings": {},
+  "fromTemplateId": "sentinel-PaloAltoOverview",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
