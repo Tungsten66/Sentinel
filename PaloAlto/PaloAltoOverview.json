@@ -633,44 +633,6 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC'\r\n| where '{EventClass}' == \"All\" or coalesce(Subtype, ThreatContentType)=='{EventClass}'\r\n| summarize EventCount= count() by Action, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})",
-        "size": 0,
-        "exportToExcelOptions": "visible",
-        "title": "Device action, by time",
-        "timeContext": {
-          "durationMs": 0
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "barchart"
-      },
-      "customWidth": "50",
-      "name": "Traffic activity by time"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where '{DeviceAction}' == \"All\" or Action=='{DeviceAction}'\r\n| where Type =~ \"TRAFFIC\"\r\n| summarize EventCount= count() by coalesce(Subtype, ThreatContentType), bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})",
-        "size": 0,
-        "exportToExcelOptions": "visible",
-        "title": "Device events Id, by time",
-        "timeContext": {
-          "durationMs": 0
-        },
-        "timeContextFromParameter": "TimeRange",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "visualization": "barchart"
-      },
-      "customWidth": "50",
-      "name": "Traffic class ID by time"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
         "query": "PaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC' \r\n| where Subtype =~ 'end' \r\n| extend Reason = SessionEndReason\r\n| summarize ReasonCount= count() by Reason, bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
         "size": 0,
         "exportToExcelOptions": "visible",
