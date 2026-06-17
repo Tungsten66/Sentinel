@@ -49,31 +49,6 @@
       "type": 9,
       "content": {
         "version": "KqlParameterItem/1.0",
-        "parameters": [
-          {
-            "id": "6f0c9a17-0d09-4dbd-9d7e-e7e4a539bb8d",
-            "version": "KqlParameterItem/1.0",
-            "name": "LoadHeavyCharts",
-            "label": "Load Heavy Time-Series",
-            "type": 2,
-            "isRequired": true,
-            "jsonData": "[{\"value\": \"No\", \"label\": \"No (faster startup)\"}, {\"value\": \"Yes\", \"label\": \"Yes\"}]",
-            "value": "No",
-            "typeSettings": {
-              "additionalResourceOptions": []
-            }
-          }
-        ],
-        "style": "pills",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
-      },
-      "name": "parameters - loadheavycharts"
-    },
-    {
-      "type": 9,
-      "content": {
-        "version": "KqlParameterItem/1.0",
         "query": "",
         "crossComponentResources": [],
         "parameters": [
@@ -386,11 +361,6 @@
           }
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
-      },
       "customWidth": "50",
       "name": "Event trend by time"
     },
@@ -448,11 +418,6 @@
             }
           }
         }
-      },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Events severity over time"
@@ -645,11 +610,6 @@
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
       },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
-      },
       "customWidth": "50",
       "name": "Reasons for session ending"
     },
@@ -657,7 +617,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "// Data sent outbound vs inbound\r\nPaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC'\r\n| extend Direction=iff(SourceZone=~'Trust','Outbound' ,'Inbound' )\r\n| summarize DataSentOutBoundMB=sumif(BytesSent, Direction=~'Outbound')/1048576, DataRecievedInboundMB=sumif(BytesReceived, Direction=~'Inbound')/1048576 by bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
+        "query": "// Data sent outbound vs inbound\r\nPaloAlto_Syslog()\r\n| where \"{Destination_IP:label}\"==\"All\" or DestinationAddress in ({Destination_IP}) \r\n| where \"{Source_IP:label}\" == \"All\" or SourceAddress in ({Source_IP})\r\n| where Type =~ 'TRAFFIC'\r\n| extend Direction=iff(SourceZone=~'Trust','Outbound' ,'Inbound' )\r\n| summarize DataSentOutBoundMB=sumif(todouble(BytesSent), Direction=~'Outbound')/1048576, DataRecievedInboundMB=sumif(todouble(BytesReceived), Direction=~'Inbound')/1048576 by bin_at(TimeGenerated, {TimeRange:grain}, {TimeRange:start})\r\n",
         "size": 0,
         "exportToExcelOptions": "visible",
         "title": "Sent and received data, by volume",
@@ -668,11 +628,6 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
-      },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Sent and received data by volume"
@@ -1030,11 +985,6 @@
           "labelSettings": []
         }
       },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
-      },
       "customWidth": "33",
       "name": "Web filter ativity by time"
     },
@@ -1098,11 +1048,6 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
-      },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Wildfire events, by time"
@@ -1554,11 +1499,6 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
-      },
-      "conditionalVisibility": {
-        "parameterName": "LoadHeavyCharts",
-        "comparison": "isEqualTo",
-        "value": "Yes"
       },
       "name": "Compare allowed and denied files by time"
     }
