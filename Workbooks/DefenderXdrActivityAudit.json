@@ -1,0 +1,928 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Defender XDR Activity Audit\n---\nAudit administrative and security-sensitive activity from Defender XDR using the `CloudAppEvents` table in Microsoft Sentinel. This workbook focuses on high-risk actions, control-plane changes, device response actions, and Defender-to-Sentinel integration events."
+      },
+      "name": "text - title"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "**Credits:** Inspired by Bert-Jan Pals' Audit Defender XDR Activities article: https://kqlquery.com/posts/audit-defender-xdr/"
+      },
+      "name": "text - credits"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "8f695230-59e6-4d32-a994-c6bb9b39f001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspace",
+            "label": "Log Analytics Workspace",
+            "type": 5,
+            "description": "Select the Sentinel workspace that contains CloudAppEvents data.",
+            "isRequired": true,
+            "multiSelect": false,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "resources\n| where type =~ 'microsoft.operationalinsights/workspaces'\n| project id, name, location, resourceGroup, subscriptionId\n| order by name asc",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "value": null
+          },
+          {
+            "id": "253bbd57-39d4-47f1-a64b-c3d4f4d5870d",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time Range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "0ae662aa-b75f-41ba-8137-15c2218d7731",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTab",
+            "label": "Selected Tab",
+            "type": 1,
+            "isRequired": false,
+            "value": "Overview",
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "multiLineText": false,
+              "editorType": 0
+            },
+            "timeContext": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "a4d7c7de-4f11-43dd-b55f-43237394f79a",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowHelp",
+            "label": "Show Help",
+            "type": 2,
+            "description": "Show setup, collection prerequisites, and validation steps.",
+            "isRequired": false,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\n    { \"value\": \"No\", \"label\": \"No\" },\n    { \"value\": \"Yes\", \"label\": \"Yes\" }\n]",
+            "value": "No"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - filters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Navigation"
+      },
+      "name": "text - navigation title"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Help\n---\n### Collection prerequisites\n- Turn on **Unified audit log** integration in Defender XDR.\n- Ensure the **Microsoft 365 connector** in Defender for Cloud Apps is enabled and collecting Office 365 activities so Defender XDR actions land in `CloudAppEvents`.\n- Confirm data is arriving with a quick check: `CloudAppEvents | extend Workload = tostring(parse_json(RawEventData).Workload) | where Workload contains \"Defender\" | summarize count()`\n\n### Validation approach\n- Use a short time range such as 24 hours when validating changes.\n- Perform one known admin action, wait for ingestion, then confirm the corresponding `ActionType` appears in `CloudAppEvents`.\n- If a section stays empty, validate the specific action type first in Logs before troubleshooting workbook rendering.\n\n### Common test activities\n- Download an offboarding package in Defender for Endpoint.\n- Isolate a test device, then release it from isolation.\n- Create, disable, or delete a test custom detection rule.\n- Toggle a non-production advanced feature in a test tenant.\n- Run a manual AV scan or collect a benign test file from a lab endpoint."
+      },
+      "conditionalVisibility": {
+        "parameterName": "ShowHelp",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
+      "name": "text - global help"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "f43ea073-294e-47cb-8b2c-7d6f1187d101",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Overview",
+            "subTarget": "Overview",
+            "style": "link"
+          },
+          {
+            "id": "0d8688a6-f523-49fc-bf81-79f4fce62061",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Activity Explorer",
+            "subTarget": "Explorer",
+            "style": "link"
+          },
+          {
+            "id": "2752a442-b778-4a55-82ad-0ce2dc1235ec",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "High Risk",
+            "subTarget": "HighRisk",
+            "style": "link"
+          },
+          {
+            "id": "f8d58dbc-65c8-4d2a-ad01-b82737c41141",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Config Changes",
+            "subTarget": "Config",
+            "style": "link"
+          },
+          {
+            "id": "0cb5ce8e-fb0d-4bea-96db-8bf6e4c45a40",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Extended Audit",
+            "subTarget": "Extended",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "links - navigation"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## Overview\nBaseline volume and high-level triage for Defender XDR audit activity."
+            },
+            "name": "text - overview title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### Overview help\n- This section assumes Defender XDR audit data is already present in `CloudAppEvents`.\n- Validate by running a broad query first: `CloudAppEvents | where TimeGenerated > ago(1d) | extend Workload = tostring(parse_json(RawEventData).Workload) | where Workload contains \"Defender\" | summarize count() by ActionType`.\n- Expected result: tiles should show non-zero values after any Defender admin activity in the selected period."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHelp",
+              "comparison": "isEqualTo",
+              "value": "Yes"
+            },
+            "name": "text - overview help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Count = count()\n| extend Metric = \"Audit Events\"",
+              "size": 4,
+              "title": "Total Defender Audit Events",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "25",
+            "name": "query - overview total"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Count = dcountif(AccountDisplayName, isnotempty(AccountDisplayName))\n| extend Metric = \"Actors\"",
+              "size": 4,
+              "title": "Distinct Actors",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "25",
+            "name": "query - overview actors"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| extend IsHighRisk = case(\n    ActionType == \"DownloadOffboardingPkg\", 1,\n    ActionType == \"ReleaseFromIsolation\", 1,\n    ActionType == \"DeleteCustomDetection\", 1,\n    ActionType == \"SentinelDisconnectWorkspace\", 1,\n    ActionType == \"SensorDeleted\", 1,\n    ActionType == \"ExclusionConfigurationAdded\", 1,\n    ActionType == \"SetAdvancedFeatures\" and tobool(parse_json(RawEventData).SettingsNewValue) == false, 1,\n    ActionType == \"ChangeCustomDetectionRuleStatus\" and tostring(parse_json(RawEventData).IsEnabled) == \"false\", 1,\n    0\n)\n| summarize Count = countif(IsHighRisk == 1)\n| extend Metric = \"High-Risk Events\"",
+              "size": 4,
+              "title": "High-Risk Events",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "red"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "25",
+            "name": "query - overview high risk"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Count = dcount(Workload)\n| extend Metric = \"Defender Workloads\"",
+              "size": 4,
+              "title": "Defender Workloads",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "orange"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "customWidth": "25",
+            "name": "query - overview workloads"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Count = count() by bin(TimeGenerated, 1d), ActionType\n| top 10 by Count desc\n| render timechart",
+              "size": 0,
+              "title": "Daily Activity by Action Type",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "name": "query - overview daily activity"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Count = count() by ActionType\n| top 15 by Count desc",
+              "size": 0,
+              "title": "Top Audit Actions",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart"
+            },
+            "customWidth": "50",
+            "name": "query - overview top actions"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| extend UserId = tostring(parse_json(RawEventData).UserId)\n| extend DeviceName = tostring(parse_json(RawEventData).DeviceName)\n| extend SettingName = tostring(parse_json(RawEventData).SettingName)\n| extend Severity = case(\n    ActionType == \"DownloadOffboardingPkg\", \"Critical\",\n    ActionType == \"ReleaseFromIsolation\", \"High\",\n    ActionType == \"DeleteCustomDetection\", \"High\",\n    ActionType == \"SentinelDisconnectWorkspace\", \"High\",\n    ActionType == \"SensorDeleted\", \"High\",\n    ActionType == \"ExclusionConfigurationAdded\", \"Medium\",\n    ActionType == \"SetAdvancedFeatures\" and tobool(parse_json(RawEventData).SettingsNewValue) == false, \"High\",\n    ActionType == \"ChangeCustomDetectionRuleStatus\" and tostring(parse_json(RawEventData).IsEnabled) == \"false\", \"High\",\n    \"Info\"\n)\n| where Severity != \"Info\"\n| project TimeGenerated, Severity, ActionType, Workload, AccountDisplayName, UserId, DeviceName, SettingName, IPAddress\n| order by TimeGenerated desc\n| take 100",
+              "size": 0,
+              "title": "Recent High-Signal Activity",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - overview high signal"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Overview"
+      },
+      "name": "group - overview"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## Activity Explorer\nExplore all Defender XDR audit activity, then pivot by actor, workload, or action type."
+            },
+            "name": "text - explorer title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### Activity Explorer help\n- Use this section first when validating ingestion because it exposes raw events and `RawEventData`.\n- Reproduce by completing any Defender XDR admin action in a test tenant, then search here for the expected `ActionType` or actor.\n- If an expected event is missing here, the issue is data collection or event generation, not the downstream visualizations."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHelp",
+              "comparison": "isEqualTo",
+              "value": "Yes"
+            },
+            "name": "text - explorer help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| extend UserId = tostring(parse_json(RawEventData).UserId)\n| extend DeviceName = tostring(parse_json(RawEventData).DeviceName)\n| extend ActionComment = tostring(parse_json(RawEventData).ActionComment)\n| extend ResultDescription = tostring(parse_json(RawEventData).ResultDescription)\n| project TimeGenerated, Workload, ActionType, AccountDisplayName, UserId, DeviceName, IPAddress, ActionComment, ResultDescription, RawEventData\n| order by TimeGenerated desc\n| take 500",
+              "size": 0,
+              "title": "All Defender XDR Audit Events",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "name": "query - explorer all events"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Events = count(), Actions = dcount(ActionType), Devices = dcount(tostring(parse_json(RawEventData).DeviceName)) by AccountDisplayName\n| where isnotempty(AccountDisplayName)\n| top 25 by Events desc",
+              "size": 0,
+              "title": "Top Actors",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - explorer actors"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| summarize Events = count() by Workload, ActionType\n| top 50 by Events desc",
+              "size": 0,
+              "title": "Workload and Action Breakdown",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - explorer workload action"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Explorer"
+      },
+      "name": "group - explorer"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## High Risk\nPrioritize actions that can reduce visibility, weaken controls, or materially change response posture."
+            },
+            "name": "text - high risk title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### High Risk help\n- Recommended lab validation steps: download a Defender for Endpoint offboarding package, isolate and release a test device, disable or delete a disposable test custom detection, and collect a benign file from a lab endpoint.\n- Expected action types in this section include `DownloadOffboardingPkg`, `ReleaseFromIsolation`, `DeleteCustomDetection`, `ChangeCustomDetectionRuleStatus`, `LiveResponseGetFile`, and `DownloadFile`.\n- Use dedicated test devices and non-production detections only."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHelp",
+              "comparison": "isEqualTo",
+              "value": "Yes"
+            },
+            "name": "text - high risk help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"DownloadOffboardingPkg\"\n| extend UserId = tostring(parse_json(RawEventData).UserId), ClientIP = tostring(parse_json(RawEventData).ClientIP)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| project-reorder TimeGenerated, InitiatedByAccountName, InitiatedByAccountId, UserId, ClientIP, ActionType\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Offboarding Package Downloads",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - risk offboarding"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"ReleaseFromIsolation\"\n| extend ReleasedDevice = tostring(parse_json(RawEventData).DeviceName), ReleaseComment = tostring(parse_json(RawEventData).ActionComment)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| lookup kind=leftouter (\n    CloudAppEvents\n    | where TimeGenerated {TimeRange}\n    | where ActionType == \"IsolateDevice\"\n    | extend IsolatedDevice = tostring(parse_json(RawEventData).DeviceName), IsolationComment = tostring(parse_json(RawEventData).ActionComment), IsolationScope = tostring(parse_json(RawEventData).ActionScope)\n    | project-rename IsolationInitiatedByAccountName = AccountDisplayName, IsolationInitiatedByAccountId = AccountId, IsolationTime = TimeGenerated\n    | project IsolationTime, IsolatedDevice, IsolationComment, IsolationScope, IsolationInitiatedByAccountName, IsolationInitiatedByAccountId\n) on $left.ReleasedDevice == $right.IsolatedDevice\n| project-reorder TimeGenerated, ReleasedDevice, ReleaseComment, InitiatedByAccountName, InitiatedByAccountId, IsolationTime, IsolationComment, IsolationScope, IsolationInitiatedByAccountName, IsolationInitiatedByAccountId\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Devices Removed From Isolation",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - risk release isolation"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let Deleted = CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"DeleteCustomDetection\"\n| extend RuleName = tostring(parse_json(RawEventData).RuleName), QueryText = tostring(parse_json(RawEventData).Query), Actor = AccountDisplayName, ChangeType = \"Deleted\"\n| project TimeGenerated, ChangeType, Actor, RuleName, QueryText;\nlet Disabled = CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"ChangeCustomDetectionRuleStatus\"\n| where tostring(parse_json(RawEventData).IsEnabled) == \"false\"\n| extend RuleName = tostring(parse_json(RawEventData).RuleName), QueryText = tostring(parse_json(RawEventData).Query), Actor = tostring(parse_json(RawEventData).UserId), ChangeType = \"Disabled\"\n| project TimeGenerated, ChangeType, Actor, RuleName, QueryText;\nDeleted\n| union Disabled\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Custom Detection Deletions and Disables",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - risk custom detections"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType in ('LiveResponseGetFile', 'DownloadFile')\n| extend FileName = tostring(parse_json(RawEventData).FileName), FileSHA256 = tostring(parse_json(RawEventData).FileSHA256), FileSize = tostring(parse_json(RawEventData).FileSize)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| project-reorder TimeGenerated, InitiatedByAccountName, InitiatedByAccountId, IPAddress, FileName, FileSHA256, FileSize, ActionType\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Files Collected From Hosts",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - risk file collection"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "HighRisk"
+      },
+      "name": "group - high risk"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## Config Changes\nTrack changes that alter Defender XDR behavior, permissions, detections, and alert handling."
+            },
+            "name": "text - config title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### Config Changes help\n- Validate RBAC by adding or modifying a test Defender role assignment.\n- Validate suppression auditing by creating a temporary alert suppression in a lab scope.\n- Validate advanced feature auditing by toggling a test-safe setting, especially `Live Response unsigned script execution`, in a non-production tenant if possible.\n- Expected action types here include events ending in `Role`, `ExclusionConfigurationAdded`, and `SetAdvancedFeatures`."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHelp",
+              "comparison": "isEqualTo",
+              "value": "Yes"
+            },
+            "name": "text - config help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| extend Workload = tostring(parse_json(RawEventData).Workload)\n| where Workload contains \"Defender\"\n| where ActionType endswith \"Role\"\n| extend RoleName = tostring(parse_json(RawEventData).RoleName), RolePermissions = tostring(parse_json(RawEventData).RolePermissions), AssignedGroups = tostring(parse_json(RawEventData).AssignedGroups)\n| project-reorder TimeGenerated, ActionType, AccountDisplayName, AccountObjectId, RoleName, RolePermissions, AssignedGroups\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "RBAC Changes",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - config rbac"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"ExclusionConfigurationAdded\"\n| extend Workload = tostring(parse_json(RawEventData).Workload), ResultStatus = tostring(parse_json(RawEventData).ResultStatus), ResultDescription = tostring(parse_json(RawEventData).ResultDescription)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| project-reorder TimeGenerated, Workload, ResultDescription, ResultStatus, InitiatedByAccountName, InitiatedByAccountId\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Alert Suppressions Added",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - config suppression"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"SetAdvancedFeatures\"\n| extend Workload = tostring(parse_json(RawEventData).Workload), SettingName = tostring(parse_json(RawEventData).SettingName), SettingsNewValue = tostring(parse_json(RawEventData).SettingsNewValue), UserId = tostring(parse_json(RawEventData).UserId)\n| extend ChangeRisk = case(\n    SettingName == \"Live Response unsigned script execution\" and SettingsNewValue in (\"true\", \"1\"), \"High\",\n    SettingsNewValue in (\"false\", \"0\"), \"High\",\n    \"Review\"\n)\n| project-reorder TimeGenerated, ChangeRisk, Workload, SettingName, SettingsNewValue, AccountDisplayName, UserId\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Advanced Feature Changes",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - config advanced features"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"SetAdvancedFeatures\"\n| extend SettingName = tostring(parse_json(RawEventData).SettingName), SettingsNewValue = tostring(parse_json(RawEventData).SettingsNewValue)\n| where SettingName == \"Live Response unsigned script execution\"\n| project-reorder TimeGenerated, AccountDisplayName, AccountId, ActionType, SettingName, SettingsNewValue\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Live Response Unsigned Script Setting Changes",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - config unsigned scripts"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Config"
+      },
+      "name": "group - config"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "---\n## Extended Audit\nAdditional activity I recommend reviewing regularly because it reflects response operations, data access, and platform integration changes."
+            },
+            "name": "text - extended title"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### Extended Audit help\n- Validate device response actions by isolating a lab device and running a manual AV scan.\n- Validate integration monitoring by disconnecting and reconnecting a Sentinel workspace only in a controlled lab if you specifically need to test that event.\n- Validate sensor deletion only in an isolated test environment because it is disruptive.\n- Expected action types here include `IsolateDevice`, `RunAntiVirusScan`, `SentinelDisconnectWorkspace`, and `SensorDeleted`."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHelp",
+              "comparison": "isEqualTo",
+              "value": "Yes"
+            },
+            "name": "text - extended help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"IsolateDevice\"\n| extend IsolatedDevice = tostring(parse_json(RawEventData).DeviceName), IsolationComment = tostring(parse_json(RawEventData).ActionComment), IsolationScope = tostring(parse_json(RawEventData).ActionScope)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| project-reorder TimeGenerated, IsolatedDevice, IsolationComment, IsolationScope, InitiatedByAccountName, InitiatedByAccountId\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Device Isolation Actions",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - extended isolate device"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"RunAntiVirusScan\"\n| extend DeviceName = tostring(parse_json(RawEventData).DeviceName), ActionComment = tostring(parse_json(RawEventData).ActionComment), ActionScope = tostring(parse_json(RawEventData).ActionScope)\n| summarize TotalAntivirusScans = count(), ScanTypes = make_set(ActionScope), Comments = make_set(ActionComment) by DeviceName\n| order by TotalAntivirusScans desc",
+              "size": 0,
+              "title": "Manual Antivirus Scan Activity",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - extended av scans"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"SentinelDisconnectWorkspace\"\n| extend WorkspaceId = tostring(parse_json(RawEventData).WorkspaceId), Status = tostring(parse_json(RawEventData).Status), SubscriptionId = tostring(parse_json(RawEventData).SubscriptionId), ResourceGroup = tostring(parse_json(RawEventData).ResourceGroup), WorkspaceType = tostring(parse_json(RawEventData).WorkspaceType)\n| project-rename InitiatedByAccountName = AccountDisplayName, InitiatedByAccountId = AccountId\n| project-reorder TimeGenerated, InitiatedByAccountName, InitiatedByAccountId, IPAddress, WorkspaceType, Status, WorkspaceId, ResourceGroup, SubscriptionId\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Sentinel Workspace Disconnects",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - extended workspace disconnect"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CloudAppEvents\n| where TimeGenerated {TimeRange}\n| where ActionType == \"SensorDeleted\"\n| extend Sensor = tostring(parse_json(RawEventData).ResultDescription), InitiatorUpn = tostring(parse_json(RawEventData).UserId)\n| project-reorder TimeGenerated, Sensor, InitiatorUpn, AccountDisplayName, IPAddress\n| order by TimeGenerated desc",
+              "size": 0,
+              "title": "Defender for Identity Sensor Deletions",
+              "timeContext": {
+                "durationMs": 2592000000
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "query - extended sensor deletion"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "Extended"
+      },
+      "name": "group - extended"
+    }
+  ]
+}
