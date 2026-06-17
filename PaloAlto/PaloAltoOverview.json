@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "<div style=\"font-size: 200%;\">Palo Alto Networks overview</div><div style=\"font-size: 90%; color: #605e5c; margin-top: 4px;\">Workbook Version: v2.9 | Last Updated: 2026-06-17</div>"
+        "json": "<div style=\"font-size: 200%;\">Palo Alto Networks overview</div><div style=\"font-size: 90%; color: #605e5c; margin-top: 4px;\">Workbook Version: v2.10 | Last Updated: 2026-06-17</div>"
       },
       "name": "text - 0"
     },
@@ -36,7 +36,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## ℹ️ Parser Function Requirement\r\n\r\n**Workbook Version:** v2.9  \r\n**Workbook Last Updated:** 2026-06-17  \r\n**Parser Version:** v2.15  \r\n**Parser Last Updated:** 2026-06-17\r\n\r\n### Change Log\r\n- v2.9 | 2026-06-17 | Optimized timechart queries by replacing raw TimeGenerated grouping with TimeRange-aligned bin_at() aggregation to reduce render cost.\r\n- v2.8 | 2026-06-17 | Reduced workbook load-time cost by simplifying parameter and summary tile queries (removed join+make-series startup patterns).\r\n- v2.7 | 2026-06-17 | Added low-cost type token prefilter before regex extraction to reduce base scan CPU.\r\n- v2.6 | 2026-06-17 | Removed explicit function time parameters/filter so workbook and Logs use the selected UI TimeRange.\r\n- v2.4 | 2026-06-17 | Reworked parser internals from nested callables to tabular let sections to resolve callable-expression errors in Sentinel Logs.\r\n- v2.3 | 2026-06-17 | Fixed callable-union invocation by explicitly invoking all parser sub-functions.\r\n- v2.2 | 2026-06-17 | Added TimeRange-parameterized parser calls in workbook queries; parser now uses early time pruning and no materialize/global sort.\r\n- v2.1 | 2026-06-12 | Initial customer workbook/parser baseline for PAN-OS 11.x/12.x fields.\r\n\r\nThis workbook requires the **`PaloAlto_Syslog`** workspace function to be deployed in your Microsoft Sentinel workspace before any data will appear.\r\n\r\n---\r\n\r\n### Deploying the Parser Function\r\n\r\n1. Open **Microsoft Sentinel** → **Logs**\r\n2. Paste the function body from `PaloAlto_Syslog.function.kql` into Function Body\r\n3. Click **Save as function**\r\n4. Set the **Function name** to exactly: `PaloAlto_Syslog`\r\n5. (Optional) Set a description, then click **Save**\r\n\r\n---\r\n\r\n### What the Parser Does\r\n\r\nThe `PaloAlto_Syslog` function reads from Sentinel `Syslog` (facility: **user**) and parses active PAN-OS log types in this deployment (TRAFFIC, THREAT, SYSTEM, CONFIG) into a structured schema.\r\n\r\n### Prerequisites\r\n\r\n- PAN-OS syslog forwarding configured to send to the Log Analytics workspace (facility: **user**)\r\n- Syslog messages must use PAN-OS RFC 5424 style records (starting with `1,20`)\r\n- The `PaloAlto_Syslog` function must be saved as a **workspace function** in Sentinel Logs"
+        "json": "## ℹ️ Parser Function Requirement\r\n\r\n**Workbook Version:** v2.10  \r\n**Workbook Last Updated:** 2026-06-17  \r\n**Parser Version:** v2.15  \r\n**Parser Last Updated:** 2026-06-17\r\n\r\n### Change Log\r\n- v2.10 | 2026-06-17 | Added workbook-only startup load controls for expensive time-series charts, fixed Activities tile label binding, and aligned Source_IP to TimeRange context.\r\n- v2.9 | 2026-06-17 | Optimized timechart queries by replacing raw TimeGenerated grouping with TimeRange-aligned bin_at() aggregation to reduce render cost.\r\n- v2.8 | 2026-06-17 | Reduced workbook load-time cost by simplifying parameter and summary tile queries (removed join+make-series startup patterns).\r\n- v2.7 | 2026-06-17 | Added low-cost type token prefilter before regex extraction to reduce base scan CPU.\r\n- v2.6 | 2026-06-17 | Removed explicit function time parameters/filter so workbook and Logs use the selected UI TimeRange.\r\n- v2.4 | 2026-06-17 | Reworked parser internals from nested callables to tabular let sections to resolve callable-expression errors in Sentinel Logs.\r\n- v2.3 | 2026-06-17 | Fixed callable-union invocation by explicitly invoking all parser sub-functions.\r\n- v2.2 | 2026-06-17 | Added TimeRange-parameterized parser calls in workbook queries; parser now uses early time pruning and no materialize/global sort.\r\n- v2.1 | 2026-06-12 | Initial customer workbook/parser baseline for PAN-OS 11.x/12.x fields.\r\n\r\nThis workbook requires the **`PaloAlto_Syslog`** workspace function to be deployed in your Microsoft Sentinel workspace before any data will appear.\r\n\r\n---\r\n\r\n### Deploying the Parser Function\r\n\r\n1. Open **Microsoft Sentinel** → **Logs**\r\n2. Paste the function body from `PaloAlto_Syslog.function.kql` into Function Body\r\n3. Click **Save as function**\r\n4. Set the **Function name** to exactly: `PaloAlto_Syslog`\r\n5. (Optional) Set a description, then click **Save**\r\n\r\n---\r\n\r\n### What the Parser Does\r\n\r\nThe `PaloAlto_Syslog` function reads from Sentinel `Syslog` (facility: **user**) and parses active PAN-OS log types in this deployment (TRAFFIC, THREAT, SYSTEM, CONFIG) into a structured schema.\r\n\r\n### Prerequisites\r\n\r\n- PAN-OS syslog forwarding configured to send to the Log Analytics workspace (facility: **user**)\r\n- Syslog messages must use PAN-OS RFC 5424 style records (starting with `1,20`)\r\n- The `PaloAlto_Syslog` function must be saved as a **workspace function** in Sentinel Logs"
       },
       "conditionalVisibility": {
         "parameterName": "ShowHelp",
@@ -44,6 +44,31 @@
         "value": "Yes"
       },
       "name": "text - help"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "6f0c9a17-0d09-4dbd-9d7e-e7e4a539bb8d",
+            "version": "KqlParameterItem/1.0",
+            "name": "LoadHeavyCharts",
+            "label": "Load Heavy Time-Series",
+            "type": 2,
+            "isRequired": true,
+            "jsonData": "[{\"value\": \"No\", \"label\": \"No (faster startup)\"}, {\"value\": \"Yes\", \"label\": \"Yes\"}]",
+            "value": "No",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - loadheavycharts"
     },
     {
       "type": 9,
@@ -133,8 +158,9 @@
               "selectAllValue": "All"
             },
             "timeContext": {
-              "durationMs": 1800000
+              "durationMs": 0
             },
+            "timeContextFromParameter": "TimeRange",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces"
           },
@@ -234,7 +260,7 @@
         "gridSettings": {
           "formatters": [
             {
-              "columnMatch": "Activity",
+              "columnMatch": "Activitys",
               "formatter": 0,
               "formatOptions": {
                 "showIcon": true
@@ -289,7 +315,7 @@
         },
         "tileSettings": {
           "titleContent": {
-            "columnMatch": "Activity",
+            "columnMatch": "Activitys",
             "formatter": 1,
             "formatOptions": {
               "showIcon": true
@@ -360,6 +386,11 @@
           }
         }
       },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
       "customWidth": "50",
       "name": "Event trend by time"
     },
@@ -417,6 +448,11 @@
             }
           }
         }
+      },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Events severity over time"
@@ -647,6 +683,11 @@
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
       },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
       "customWidth": "50",
       "name": "Reasons for session ending"
     },
@@ -665,6 +706,11 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
+      },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Sent and received data by volume"
@@ -1022,6 +1068,11 @@
           "labelSettings": []
         }
       },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
+      },
       "customWidth": "33",
       "name": "Web filter ativity by time"
     },
@@ -1085,6 +1136,11 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
+      },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
       },
       "customWidth": "50",
       "name": "Wildfire events, by time"
@@ -1536,6 +1592,11 @@
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
         "visualization": "timechart"
+      },
+      "conditionalVisibility": {
+        "parameterName": "LoadHeavyCharts",
+        "comparison": "isEqualTo",
+        "value": "Yes"
       },
       "name": "Compare allowed and denied files by time"
     }
